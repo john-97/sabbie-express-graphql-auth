@@ -1,4 +1,5 @@
 const axios = require("axios");
+const jwt = require('jsonwebtoken')
 const {
   GraphQLObjectType,
   GraphQLString,
@@ -17,6 +18,12 @@ const CustomerType = new GraphQLObjectType({
     age: { type: GraphQLInt }
   })
 })
+const JWT = new GraphQLObjectType({
+  name: 'JWT',
+  fields: () => ({
+    token: { type: GraphQLString }
+  })
+})
 
 const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
@@ -24,11 +31,17 @@ const RootQuery = new GraphQLObjectType({
     customer: {
       type: CustomerType,
       args: {
-        id: { type: GraphQLString }
+        id: { type: GraphQLString },
+        token: { type: GraphQLString }
       },
       resolve(parentValue, args) {
+        jwt.verify(args.token, 'secret-key', (err, authData) => {
+          if (err) return null;
+          console.log(authData);
+          return authData;
+        })
         return axios.get('http://localhost:3000/customers/' + args.id)
-          .then(res => res.data)
+        .then(res => res.data)
       }
     },
     customers:{
@@ -36,6 +49,27 @@ const RootQuery = new GraphQLObjectType({
       resolve(parentValue, args){
         return axios.get('http://localhost:3000/customers')
           .then(res => res.data);
+      }
+    },
+    login: {
+      type: JWT,
+      args: {
+        name: {type: GraphQLString},
+        email: {type: GraphQLString}
+      },
+      resolve(parentValue, args){
+        return axios.get('http://localhost:3000/customers')
+        .then((res) => {
+          console.log(res.data, args)
+          for (let i = 0; i < res.data.length; i++) {
+            if (res.data[i].email !== args.email) continue;
+            if (res.data[i].name === args.name) { // using name as password
+              const token = jwt.sign({user: res.data[i]}, 'secretkey', { expiresIn: '1h' });
+              return { token }
+            }
+            return null;
+          }
+        });
       }
     }
   }
@@ -89,5 +123,5 @@ const mutation = new GraphQLObjectType({
 
 module.exports = new GraphQLSchema({
   query: RootQuery,
-  mutation
+  mutation,
 })

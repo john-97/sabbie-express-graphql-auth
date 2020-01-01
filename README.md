@@ -23,6 +23,11 @@ GET REQUESTS
     age
   }
 }
+{
+	login(name: "sam", email: "sam@gmail.com") {
+	  token
+	}
+}
 ```
 
 POST, PUT, DELETE
