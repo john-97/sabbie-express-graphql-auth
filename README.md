@@ -57,3 +57,10 @@ mutation{
   }
 }
 ```
+
+Understanding Session Management
+There are 2 Loops
+1. Login
+  a. email and password => if true return sid (session id)
+2. API
+  a. All APIs requires the SID. This SID will expire after 1h. Where the user needs to relogin
